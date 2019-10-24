@@ -1,0 +1,14 @@
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 661e2bf38526..6488792b589e 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7380,6 +7380,9 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ 	}
+ 
+ 	switch (nr) {
++        case 0x283:
++		ret = 0x0033383245504D43;
++  	        break;
+ 	case KVM_HC_VAPIC_POLL_IRQ:
+ 		ret = 0;
+ 		break;
