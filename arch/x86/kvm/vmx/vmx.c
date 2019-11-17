@@ -60,7 +60,8 @@
 #include "vmcs12.h"
 #include "vmx.h"
 #include "x86.h"
-
+u32 exitCounter =0;
+EXPORT_SYMBOL(exitCounter);
 MODULE_AUTHOR("Qumranet");
 MODULE_LICENSE("GPL");
 
@@ -5864,7 +5865,6 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
 
-	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 
 	/*
 	 * Flush logged GPAs PML buffer, this will make dirty_bitmap more
@@ -5873,6 +5873,8 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	 * mode as if vcpus is in root mode, the PML buffer must has been
 	 * flushed already.
 	 */
+	ExitCounterFunction(exitCF);
+	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 	if (enable_pml)
 		vmx_flush_pml_buffer(vcpu);
 
