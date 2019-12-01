@@ -5864,8 +5864,8 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
-
-
+    u64 rdt_time;
+    int temporary;
 	/*
 	 * Flush logged GPAs PML buffer, this will make dirty_bitmap more
 	 * updated. Another good is, in kvm_vm_ioctl_get_dirty_log, before
@@ -5873,7 +5873,6 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	 * mode as if vcpus is in root mode, the PML buffer must has been
 	 * flushed already.
 	 */
-	ExitCounterFunction(exitCF);
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 	if (enable_pml)
 		vmx_flush_pml_buffer(vcpu);
@@ -5946,9 +5945,14 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 		}
 	}
 
-	if (exit_reason < kvm_vmx_max_exit_handlers
-	    && kvm_vmx_exit_handlers[exit_reason])
-		return kvm_vmx_exit_handlers[exit_reason](vcpu);
+	if (exit_reason < kvm_vmx_max_exit_handlers && kvm_vmx_exit_handlers[exit_reason]){
+	    rdt_time = rdtsc();
+	    temporary = kvm_vmx_exit_handlers[exit_reason](vcpu);
+	    rdt_time = rdtsc() - rdt_time;
+	    add_exit_time_per_reason(exit_reason,rdt_time);
+
+		return temporary;
+	}
 	else {
 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 				exit_reason);
