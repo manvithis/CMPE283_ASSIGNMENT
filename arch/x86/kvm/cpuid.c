@@ -24,10 +24,21 @@
 #include "trace.h"
 #include "pmu.h"
 
+static atomic_t exitCounter;
+static atomic64_t time;
+static atomic_t ExitCounterReason[62];
+static atomic64_t ExitCounterTimeReason[62];
 
-u32 exitCounter;
-u32 ExitCounterReason[62];
-void ExitCounterFunction(u32 exitCF);
+void ExitCounterFunction(u32 exit_reason,u64 time_taken)
+{
+    if(exit_reason >= 0 && exit_reason < 62)
+    {    
+        atomic64_add(time_taken,&time);
+        atomic64_add(time_taken,&ExitCounterTimeReason[(int)exit_reason]);
+        atomic_inc(&exitCounter);
+        atomic_inc(&ExitCounterTimeReason[(int)exit_reason]);
+    }
+ }
 
 void ExitCounterFunction(u32 exitCF)
 {
@@ -1059,15 +1070,31 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	ecx = kvm_rcx_read(vcpu);
 	if(eax  ==  0x4fffffff)
 	{
-		eax = exitCounter;
+	    eax = atomic_read(&exitCounter);
 	}
-	else if(eax  ==  0x4ffffffd)
+	else if(eax  ==  0x4ffffffe)
 	{
-		eax = ExitCounterReason[(int)ecx];
+        ebx = ( (atomic64_read(&time) >> 32) );
+		ecx = ( (atomic64_read(&time) & 0xFFFFFFFF ));	    
+    }
+    else if(eax  ==  0x4ffffffd)
+    {
+        if(ecx >= 0 && ecx < 62)
+        {	    
+            eax = atomic_read(&ExitCounterReason[(int)ecx]);
+        }
 	}
-	else
+	else if(eax  ==  0x4ffffffc)
 	{
-		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+        if(ecx >= 0 && ecx < 62)
+        {        
+            ebx = ( (atomic64_read(&ExitCounterTimeReason[(int)ecx]) >> 32) );
+		    ecx = ( (atomic64_read(&ExitCounterTimeReason[(int)ecx]) & 0xFFFFFFFF ));
+        }	    
+    }
+    else
+    {
+	    kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
 	}
 	kvm_rax_write(vcpu, eax);
 	kvm_rbx_write(vcpu, ebx);
