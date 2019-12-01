@@ -36,17 +36,10 @@ void ExitCounterFunction(u32 exit_reason,u64 time_taken)
         atomic64_add(time_taken,&time);
         atomic64_add(time_taken,&ExitCounterTimeReason[(int)exit_reason]);
         atomic_inc(&exitCounter);
-        atomic_inc(&ExitCounterTimeReason[(int)exit_reason]);
+        atomic_inc(&ExitCounterReason[(int)exit_reason]);
     }
  }
 
-void ExitCounterFunction(u32 exitCF)
-{
-    if(exitCF >= 0 && exitCF <= 61){    
-        exitCounter++;
-        ExitCounterReason[(int)exitCF]++;
-    }
-}
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
 	int feature_bit = 0;
